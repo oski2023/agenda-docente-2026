@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Agenda Docente Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ajuste fino para las columnas de la tabla */
+        .col-nombres { min-width: 140px; }
+        .col-mini { width: 60px; }
+        .col-nota { width: 75px; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <div class="max-w-6xl mx-auto p-4">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">
+                📋 App Agenda para el Docente
+            </h1>
+            <p class="text-slate-500 mt-1">Gestión Educativa 2026</p>
+        </header>
+
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-slate-700 mb-4 flex items-center">
+                <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-2">👤</span>
+                Registro de Alumno Nuevo
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <input type="text" id="nom" placeholder="Nombre" class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="text" id="ape" placeholder="Apellido" class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="text" id="dni" placeholder="DNI" class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="date" id="nac" class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition text-slate-500">
+                <input type="text" id="diag" placeholder="Diag." class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="text" id="niv" placeholder="Nivel" class="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+            <button onclick="agregar()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition-colors shadow-sm">
+                + Agregar a mi Lista
+            </button>
+        </section>
+
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-700">📊 Planilla de Clase</h3>
+                <span id="fecha-actual" class="text-sm font-medium text-slate-500"></span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold">
+                        <tr>
+                            <th class="px-4 py-3 col-nombres">Alumno</th>
+                            <th class="px-2 py-3 col-mini text-center">DNI</th>
+                            <th class="px-2 py-3 col-mini text-center">Diag.</th>
+                            <th class="px-2 py-3 col-mini text-center">Pres.</th>
+                            <th class="px-2 py-3 col-nota text-center">TP1</th>
+                            <th class="px-2 py-3 col-nota text-center">EV1</th>
+                            <th class="px-2 py-3 col-nota text-center">TP2</th>
+                            <th class="px-2 py-3 col-nota text-center">EV2</th>
+                            <th class="px-4 py-3 text-center">Observaciones</th>
+                            <th class="px-2 py-3 text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo" class="divide-y divide-slate-100">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="p-6 bg-slate-50">
+                <button id="btnSync" onclick="sincronizar()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex justify-center items-center gap-2">
+                    <span>☁️</span> Sincronizar Todo a Google Drive
+                </button>
+            </div>
+        </section>
+    </div>
+
+<script>
+    const urlScript = "https://script.google.com/macros/s/AKfycbx86UL2yiAE5Mu94JOHcvehRTrTCuF3ePILYfG__zwOnhqj-fBVxqjlEaoi6bznZVZJ/exec"; 
+    let alumnos = JSON.parse(localStorage.getItem('docente_v6')) || [];
+    document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+
+    function capturarDatosActuales() {
+        return alumnos.map((_, i) => ({
+            pres: document.getElementById(`pres_${i}`)?.value || 'P',
+            tp1: document.getElementById(`tp1_${i}`)?.value || '',
+            ev1: document.getElementById(`ev1_${i}`)?.value || '',
+            tp2: document.getElementById(`tp2_${i}`)?.value || '',
+            ev2: document.getElementById(`ev2_${i}`)?.value || '',
+            obs: document.getElementById(`obs_${i}`)?.value || ''
+        }));
+    }
+
+    function agregar() {
+        const tempData = capturarDatosActuales();
+        const alu = {
+            nombre: document.getElementById('nom').value,
+            apellido: document.getElementById('ape').value,
+            dni: document.getElementById('dni').value,
+            nacimiento: document.getElementById('nac').value,
+            diagnostico: document.getElementById('diag').value,
+            nivel: document.getElementById('niv').value
+        };
+
+        if(!alu.nombre || !alu.apellido) return alert("Completa al menos Nombre y Apellido");
+
+        alumnos.push(alu);
+        localStorage.setItem('docente_v6', JSON.stringify(alumnos));
+        ['nom','ape','dni','nac','diag','niv'].forEach(id => document.getElementById(id).value = '');
+        render(tempData);
+    }
+
+    function borrar(i) {
+        if(confirm("¿Eliminar alumno?")) {
+            alumnos.splice(i, 1);
+            localStorage.setItem('docente_v6', JSON.stringify(alumnos));
+            render();
+        }
+    }
+
+    function render(datosPrevios = []) {
+        const t = document.getElementById('cuerpo');
+        t.innerHTML = '';
+        
+        alumnos.forEach((a, i) => {
+            const d = datosPrevios[i] || { pres:'P', tp1:'', ev1:'', tp2:'', ev2:'', obs:'' };
+            
+            t.innerHTML += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 font-medium text-slate-700">
+                        <div class="flex flex-col">
+                            <span class="uppercase text-xs font-bold text-slate-400">Apellido</span>
+                            <span>${a.apellido}</span>
+                            <span class="text-xs text-blue-500">${a.nombre}</span>
+                        </div>
+                    </td>
+                    <td class="px-2 py-3 text-center text-slate-500 text-xs">${a.dni}</td>
+                    <td class="px-2 py-3 text-center text-slate-500 text-xs">${a.diagnostico}</td>
+                    <td class="px-2 py-3">
+                        <select id="pres_${i}" class="bg-white border border-slate-200 rounded p-1 text-xs w-full">
+                            <option value="P" ${d.pres==='P'?'selected':''}>P</option>
+                            <option value="A" ${d.pres==='A'?'selected':''}>A</option>
+                        </select>
+                    </td>
+                    <td class="px-2 py-3"><input type="text" id="tp1_${i}" value="${d.tp1}" class="w-full border-b border-slate-200 text-center outline-none focus:border-blue-400 bg-transparent"></td>
+                    <td class="px-2 py-3"><input type="text" id="ev1_${i}" value="${d.ev1}" class="w-full border-b border-slate-200 text-center outline-none focus:border-blue-400 bg-transparent"></td>
+                    <td class="px-2 py-3"><input type="text" id="tp2_${i}" value="${d.tp2}" class="w-full border-b border-slate-200 text-center outline-none focus:border-blue-400 bg-transparent"></td>
+                    <td class="px-2 py-3"><input type="text" id="ev2_${i}" value="${d.ev2}" class="w-full border-b border-slate-200 text-center outline-none focus:border-blue-400 bg-transparent"></td>
+                    <td class="px-4 py-3"><input type="text" id="obs_${i}" value="${d.obs}" class="w-full border-b border-slate-200 text-sm outline-none focus:border-blue-400 bg-transparent"></td>
+                    <td class="px-2 py-3 text-center">
+                        <button onclick="borrar(${i})" class="text-red-400 hover:text-red-600 transition-colors">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function sincronizar() {
+        const btn = document.getElementById('btnSync');
+        btn.innerHTML = "<span>⏳</span> Sincronizando...";
+        btn.disabled = true;
+
+        const dataFinal = alumnos.map((a, i) => ({
+            ...a,
+            presentismo: document.getElementById(`pres_${i}`).value,
+            tp1: document.getElementById(`tp1_${i}`).value,
+            ev1: document.getElementById(`ev1_${i}`).value,
+            tp2: document.getElementById(`tp2_${i}`).value,
+            ev2: document.getElementById(`ev2_${i}`).value,
+            observacion: document.getElementById(`obs_${i}`).value
+        }));
+
+        try {
+            await fetch(urlScript, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dataFinal) });
+            alert("✅ ¡Sincronizado correctamente!");
+        } catch(e) { alert("Error de conexión"); }
+        finally { 
+            btn.innerHTML = "<span>☁️</span> Sincronizar Todo a Google Drive"; 
+            btn.disabled = false; 
+        }
+    }
+
+    render();
+</script>
+</body>
+</html>
